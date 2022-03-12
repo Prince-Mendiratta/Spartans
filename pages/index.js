@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 import NextLink from "next/link";
 import styles from "../styles/Home.module.css";
+import { getETHPrice, getWEIPriceInUSD } from "../helpers/getETHPrice";
 import {
   Heading,
   useBreakpointValue,
@@ -21,12 +22,28 @@ import {
   SkeletonCircle,
   HStack,
   Stack,
+  Progress,
 } from "@chakra-ui/react";
 
+import factory from "../node_modules/contracts/factory";
+import web3 from "../node_modules/contracts/web3";
 import Campaign from "../node_modules/contracts/campaign";
 import { FaHandshake } from "react-icons/fa";
 import { FcShare, FcDonate, FcMoneyTransfer } from "react-icons/fc";
 
+import { motion } from "framer-motion";
+import Bounce from 'react-reveal/Bounce';
+import Fade from 'react-reveal/Fade';
+
+export async function getServerSideProps(context) {
+  const campaigns = await factory.methods.getDeployedCampaigns().call();
+
+  console.log(campaigns);
+
+  return {
+    props: { campaigns },
+  };
+}
 
 const Feature = ({ title, text, icon }) => {
   return (
@@ -118,7 +135,7 @@ function CampaignCard({
                   h={7}
                   w={7}
                   alignSelf={"center"}
-                  color={"blue.400"}
+                  color={"cyan.400"}
                 />{" "}
               </chakra.a>
             </Tooltip>
@@ -141,7 +158,9 @@ function CampaignCard({
                 pt="2"
               >
                 <Text as="span" fontWeight={"bold"}>
-                  {"0, Become a Donor 😄"}
+                {balance > 0
+                    ? web3.utils.fromWei(balance, "ether")
+                    : "0, Become a Donor 😄"}
                 </Text>
                 <Text
                   as="span"
@@ -159,11 +178,12 @@ function CampaignCard({
                   fontWeight={"normal"}
                   color={useColorModeValue("gray.500", "gray.200")}
                 >
+                  (${getWEIPriceInUSD(ethPrice, balance)})
                 </Text>
               </Box>
 
               <Text fontSize={"md"} fontWeight="normal">
-                target of {"xx"} ETH 
+                target of 3 ETH 
               </Text>
             </Box>{" "}
           </Flex>
@@ -179,12 +199,13 @@ export default function Home({ campaigns }) {
 
   async function getSummary() {
     try {
+      campaigns = campaigns.splice(65,67)
       const summary = await Promise.all(
         campaigns.map((campaign, i) =>
           Campaign(campaigns[i]).methods.getSummary().call()
         )
       );
-      const ETHPrice = "$0.00"
+      const ETHPrice = await getETHPrice();
       updateEthPrice(ETHPrice);
       console.log("summary ", summary);
       setCampaignList(summary);
@@ -212,41 +233,46 @@ export default function Home({ campaigns }) {
 
       <main className={styles.main}>
         <Container py={{ base: "4", md: "12" }} maxW={"7xl"} align={"left"}>
-          <Img
-            align={"right"}
-            top="-150"
-            w="50%"
-            objectFit="cover"
-            src="https://knowledge.skema.edu/wp-content/uploads/2020/10/shutterstock_1356273047-scaled.jpg"
-            alt="Image"
-          />
+          <Bounce right>
+            <Img
+              align={"right"}
+              top="-150"
+              w="50%"
+              objectFit="cover"
+              src="https://knowledge.skema.edu/wp-content/uploads/2020/10/shutterstock_1356273047-scaled.jpg"
+              alt="Image"
+            />
+          </Bounce>
 
-          <Heading
-            textAlign={useBreakpointValue({ base: "left" })}
-            fontFamily={"heading"}
-            color={useColorModeValue("gray.800", "white")}
-            as="h1"
-            my={6}
-            lineHeight="150%"
-            py={4}
-          >
-            Crowdfunding using the powers of <br /> Crypto & Blockchain
-          </Heading>
-
-          <NextLink href="/">
-            <Button
-              display={{ sm: "inline-flex" }}
-              fontSize={"md"}
-              fontWeight={600}
-              color={"white"}
-              bg={"blue.400"}
-              _hover={{
-                bg: "blue.300",
-              }}
+          <Bounce left>
+            <Heading
+              textAlign={useBreakpointValue({ base: "left" })}
+              fontFamily={"heading"}
+              color={useColorModeValue("gray.800", "white")}
+              as="h1"
+              my={6}
+              lineHeight="150%"
+              py={4}
             >
-              Create Campaign
-            </Button>
-          </NextLink>
+              Crowdfunding using the powers of <br /> Crypto & Blockchain
+            </Heading>
+
+            <NextLink href="/campaign/new">
+              <Button
+                boxShadow={"lg"}
+                display={{ sm: "inline-flex" }}
+                fontSize={"md"}
+                fontWeight={600}
+                color={"white"}
+                bg={"cyan.400"}
+                _hover={{
+                  bg: "cyan.300",
+                }}
+              >
+                Create Campaign
+              </Button>
+            </NextLink>
+          </Bounce>
         </Container>
 
         <Container py={{ base: "4", md: "12" }} maxW={"7xl"}>
@@ -264,16 +290,18 @@ export default function Home({ campaigns }) {
               {campaignList.map((el, i) => {
                 return (
                   <div key={i}>
-                    <CampaignCard
-                      name={el[5]}
-                      description={el[6]}
-                      creatorId={el[4]}
-                      imageURL={el[7]}
-                      id={campaigns[i]}
-                      target={el[8]}
-                      balance={el[1]}
-                      ethPrice={ethPrice}
-                    />
+                    <Fade bottom>
+                      <CampaignCard
+                        name={el[5]}
+                        description={el[6]}
+                        creatorId={el[4]}
+                        imageURL={el[7]}
+                        id={campaigns[i]}
+                        target={el[8]}
+                        balance={el[1]}
+                        ethPrice={ethPrice}
+                      />
+                    </Fade>
                   </div>
                 );
               })}
@@ -298,29 +326,48 @@ export default function Home({ campaigns }) {
           <Divider marginTop="4" />
 
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} py={8}>
-            <Feature
-              icon={<Icon as={FcDonate} w={10} h={10} />}
-              title={"Create a Campaign for Fundraising"}
-              text={
-                "It’ll take only 2 minutes. Just enter a few details about the funds you are raising for."
-              }
-            />
-            <Feature
-              icon={<Icon as={FcShare} w={10} h={10} />}
-              title={"Share your Campaign"}
-              text={
-                "All you need to do is share the Campaign with your friends, family and others. In no time, support will start pouring in."
-              }
-            />
-            <Feature
-              icon={<Icon as={FcMoneyTransfer} w={10} h={10} />}
-              title={"Request and Withdraw Funds"}
-              text={
-                "The funds raised can be withdrawn directly to the recipient when 50% of the contributors approve of the Withdrawal Request."
-              }
-            />
+            <Fade left><Box boxShadow={"lg"} p={4}>
+              <Feature
+                icon={<Icon as={FcDonate} w={10} h={10} />}
+                title={"Create a Campaign for Fundraising"}
+                text={
+                  "It’ll take only 2 minutes. Just enter a few details about the funds you are raising for."
+                }
+              />
+            </Box></Fade>
+
+            <Fade top><Box boxShadow={"lg"} p={4}>
+              <Feature
+                icon={<Icon as={FcShare} w={10} h={10} />}
+                title={"Share your Campaign"}
+                text={
+                  "All you need to do is share the Campaign with your friends, family and others. In no time, support will start pouring in."
+                }
+              />
+            </Box></Fade>
+
+            <Fade right><Box boxShadow={"lg"} p={4}>
+              <Feature
+                icon={<Icon as={FcMoneyTransfer} w={10} h={10} />}
+                title={"Request and Withdraw Funds"}
+                text={
+                  "The funds raised can be withdrawn directly to the recipient when 50% of the contributors approve of the Withdrawal Request."
+                }
+              />
+            </Box></Fade>
           </SimpleGrid>
-          <Divider marginTop="4" />
+
+          {/* <Heading as="h2" size="lg" mt="8">
+            For any queries raise an issue on{" "}
+            <Link
+              color="cyan.500"
+              href="https://github.com/harsh242/betterfund-crowdfunding-in-blockchain/issues"
+              isExternal
+            >
+              the Github Repo <ExternalLinkIcon mx="2px" />
+            </Link>{" "}
+          </Heading>
+          <Divider marginTop="4" /> */}
         </Container>
       </main>
     </div>

@@ -6,12 +6,19 @@ import {
   useColorModeValue,
   Container,
   Heading,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from "@chakra-ui/react";
+import { useWallet } from "use-wallet";
 
 import NextLink from "next/link";
 import DarkModeSwitch from "./DarkModeSwitch";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 
 export default function NavBar() {
+  const wallet = useWallet();
 
   return (
     <Box>
@@ -43,13 +50,13 @@ export default function NavBar() {
             <Heading
               textAlign="left"
               fontFamily={"heading"}
-              color={useColorModeValue("blue.800", "white")}
+              color={useColorModeValue("cyan.800", "white")}
               as="h2"
               size="lg"
             >
               <Box
                 as={"span"}
-                color={useColorModeValue("blue.400", "blue.300")}
+                color={useColorModeValue("cyan.400", "cyan.300")}
                 position={"relative"}
                 zIndex={10}
                 _after={{
@@ -91,24 +98,36 @@ export default function NavBar() {
               <NextLink href="/#howitworks"> How it Works</NextLink>
             </Button>
 
-            (
+            {wallet.status === "connected" ? (
+              <Menu>
+                <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                  {wallet.account.substr(0, 10) + "..."}
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={() => wallet.reset()}>
+                    {" "}
+                    Disconnect Wallet{" "}
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            ) : (
               <div>
                 <Button
                   display={{ base: "none", md: "inline-flex" }}
                   fontSize={"md"}
                   fontWeight={600}
                   color={"white"}
-                  bg={"blue.400"}
+                  bg={"cyan.400"}
                   href={"#"}
                   _hover={{
-                    bg: "blue.300",
+                    bg: "cyan.300",
                   }}
-                  onClick={() => console.log('heh')}
+                  onClick={() => wallet.connect()}
                 >
                   Connect Wallet{" "}
                 </Button>
               </div>
-            )
+            )}
 
             <DarkModeSwitch />
           </Stack>

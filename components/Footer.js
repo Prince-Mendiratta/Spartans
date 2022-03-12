@@ -1,16 +1,13 @@
 import {
   Box,
-  chakra,
   Container,
   Link,
   Stack,
   Text,
   useColorModeValue,
-  VisuallyHidden,
   Heading,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { FaInstagram, FaTwitter, FaGithub, FaGlobe } from "react-icons/fa";
 import NextLink from "next/link";
 
 export default function Footer() {
@@ -30,13 +27,13 @@ export default function Footer() {
         <Heading
           textAlign={useBreakpointValue({ base: "center", md: "left" })}
           fontFamily={"heading"}
-          color={useColorModeValue("blue.800", "white")}
+          color={useColorModeValue("cyan.800", "white")}
           as="h2"
           size="lg"
         >
           <Box
             as={"span"}
-            color={useColorModeValue("blue.400", "blue.300")}
+            color={useColorModeValue("cyan.400", "cyan.300")}
             position={"relative"}
             zIndex={10}
             _after={{
@@ -46,11 +43,10 @@ export default function Footer() {
               bottom: 0,
               w: "full",
               h: "30%",
-              bg: useColorModeValue("blue.100", "blue.900"),
               zIndex: -1,
             }}
           >
-            <NextLink href="/">FundChain</NextLink>
+            <NextLink href="/">Fund Chain</NextLink>
           </Box>
         </Heading>
         <Stack direction={"row"} spacing={6}>
